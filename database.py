@@ -35,23 +35,27 @@ def connect():
 # 1. Business Rule: Enroll a student in a class only if the student is a student at the school.
 async def enrollStudent(student_id, class_id):
   db_conn = connect()
-  with db_conn:
-    with db_conn.cursor() as cursor:
-        # Read a single record
-        sql = """INSERT INTO `Enrollment`(`student_id`, `class_id`, `date`) SELECT %s,%s, NOW()
-        WHERE (SELECT count(*) FROM `Student` WHERE `Student`.`student_id` = %s) > 0;"""
-        cursor.execute(sql, (student_id, class_id, student_id))
-        db_conn.commit()
-        result =  await select("""SELECT `Enrollment`.`enrollment_id`, `Enrollment`.`student_id`, `Enrollment`.`class_id`, `Student`.`name` 
-        FROM `Enrollment`
-        INNER JOIN `Student` ON `Enrollment`.`student_id`=`Student`.`student_id` 
-        WHERE `Enrollment`.`enrollment_id`=%s""", cursor.lastrowid)
-        table = PrettyTable(['Enrollment', 'Student', 'Class', 'Name'])
-        table.set_style(DOUBLE_BORDER)
-        for row in result:
-          table.add_row((row['enrollment_id'], row['student_id'], row['class_id'], row['name']))
-        return ("```" + table.get_string() + "```")
-        db_conn.close()
+  try:
+      with db_conn:
+          with db_conn.cursor() as cursor:
+              # Read a single record
+              sql = """INSERT INTO `Enrollment`(`student_id`, `class_id`, `date`) SELECT %s,%s, NOW()
+              WHERE (SELECT count(*) FROM `Student` WHERE `Student`.`student_id` = %s) > 0;"""
+              cursor.execute(sql, (student_id, class_id, student_id))
+              db_conn.commit()
+              result =  await select("""SELECT `Enrollment`.`enrollment_id`, `Enrollment`.`student_id`, `Enrollment`.`class_id`, `Student`.`name` 
+              FROM `Enrollment`
+              INNER JOIN `Student` ON `Enrollment`.`student_id`=`Student`.`student_id` 
+              WHERE `Enrollment`.`enrollment_id`=%s""", cursor.lastrowid)
+              table = PrettyTable(['Enrollment', 'Student', 'Class', 'Name'])
+              table.set_style(DOUBLE_BORDER)
+              for row in result:
+                table.add_row((row['enrollment_id'], row['student_id'], row['class_id'], row['name']))
+              return ("```" + table.get_string() + "```")
+              db_conn.close()
+  except Exception as enrollError:
+      print(enrollError)
+      return "Error"       
 
 # 2. Business Rule: Add device of the user only if that is their 5th or less active device.
 async def addDevice(user_id, name):
@@ -118,7 +122,7 @@ async def getDepartmentCourses(department_id):
                 db_conn.close()
     except Exception as departmentError:
       print(departmentError)
-      return "Error"
+      return "Error: No courses with that department id"
 
 # 5. Business Rule: List the majors that are offered by the school which are under a department.
 async def getDepartmentMajors(department_id):
@@ -131,13 +135,12 @@ async def getDepartmentMajors(department_id):
                 sql = """SELECT Major.major_id, Major.name FROM `Major` WHERE `department_id`= %s"""
                 cursor.execute(sql, (department_id))
                 result = cursor.fetchall()
-                print(result)
                 return ("```" + "\n\n" + tabulate(result, headers="keys", tablefmt="fancy_grid", colalign=("center", "center")) + "```")
                 # return result
                 db_conn.close()
     except Exception as departmentError:
       print(departmentError)
-      return "Error: No department with that id"
+      return "Error: No department with that id or no majors"
 
 # 6. Business Rule: List the minors that are offered by the school which are under a department.
 async def getDepartmentMinors(department_id):
@@ -154,24 +157,27 @@ async def getDepartmentMinors(department_id):
                 db_conn.close()
     except Exception as departmentError:
       print(departmentError)
-      return "Error: No department with that id"
+      return "Error: No department with that id or no majors"
 
 # 7. Business Rule: Find all the currently unoccupied study rooms and list them.
 async def getVacantStudyRooms():
   db_conn = connect()
-  with db_conn:
-    with db_conn.cursor() as cursor:
-        # Read a single record
-        sql = """SELECT StudyRoom.study_room_id, StudyRoom.room_number FROM `StudyRoom` WHERE `booked_room_date` IS NULL;"""
-        cursor.execute(sql)
-        result = cursor.fetchall()
-        return ("```" + "\n\n" + tabulate(result, headers="keys", tablefmt="fancy_grid", colalign=("center", "center")) + "```")
-        db_conn.close()
+  try:
+      with db_conn:
+        with db_conn.cursor() as cursor:
+            # Read a single record
+            sql = """SELECT StudyRoom.study_room_id, StudyRoom.room_number FROM `StudyRoom` WHERE `booked_room_date` IS NULL;"""
+            cursor.execute(sql)
+            result = cursor.fetchall()
+            return ("```" + "\n\n" + tabulate(result, headers="keys", tablefmt="fancy_grid", colalign=("center", "center")) + "```")
+            db_conn.close()
+  except Exception as studyError:
+      print(studyError)
+      return "Error"
 
 # 8. Business Rule: For each department, find all the employees currently registered at that department.
 async def getDepartmentEmployees(department_id):
     db_conn = connect()
-    # client = discord.Client()
     try:
         with db_conn:
             with db_conn.cursor() as cursor:
@@ -183,7 +189,7 @@ async def getDepartmentEmployees(department_id):
                 db_conn.close()
     except Exception as departmentError:
       print(departmentError)
-      return "Error"
+      return "Error: No employee under that department or department id doesn't exist"
 
 # 9. Business Rule: For each food stand, find all the employees currently working at that food stand.
 async def getFoodStandEmployees(food_stand_id):
@@ -251,7 +257,6 @@ async def getClassEmployee(class_id):
 # 12. Business Rule: Delete a student from the class roster if they have dropped a class
 async def removeStudent(class_id, student_id):
     db_conn = connect()
-    # client = discord.Client()
     try:
         with db_conn:
             with db_conn.cursor() as cursor:
@@ -301,7 +306,6 @@ async def updateSemester(start_date, end_date, semester_id):
 # 14. Business Rule: Get all of the classes that a student has taken.
 async def classesTaken(student_id):
     db_conn = connect()
-    # client = discord.Client()
     try:
         with db_conn:
             with db_conn.cursor() as cursor:
@@ -325,74 +329,101 @@ async def classesTaken(student_id):
 # 15. Business Rule: Create a function that gets a list of employees that aren’t assigned for a department at the moment.
 async def getNonAssignedEmployees():
   db_conn = connect()
-  with db_conn:
-    with db_conn.cursor() as cursor:
-        # Read a single record
-        sql = """SELECT Employee.name, Employee.date_of_hire FROM `Employee` WHERE `department_id` IS NULL;"""
-        cursor.execute(sql)
-        result = cursor.fetchall()
-        return ("```" + "\n\n" + tabulate(result, headers="keys", tablefmt="fancy_grid", colalign=("center", "center")) + "```")
-        db_conn.close()
+  try:
+      with db_conn:
+        with db_conn.cursor() as cursor:
+            # Read a single record
+            sql = """SELECT Employee.name, Employee.date_of_hire FROM `Employee` WHERE `department_id` IS NULL;"""
+            cursor.execute(sql)
+            result = cursor.fetchall()
+            return ("```" + "\n\n" + tabulate(result, headers="keys", tablefmt="fancy_grid", colalign=("center", "center")) + "```")
+            db_conn.close()
+  except Exception as employeeError:
+        print(employeeError)
+        return "Error"
 
 # 16. Business Rule: Create a procedure that calculates the student’s tuition balance minus financial aid.
 async def getTuitionBalance(student_id):
   db_conn = connect()
-  with db_conn:
-    with db_conn.cursor() as cursor:
-        # Read a single record
-        sql = """SELECT Tuition.amount - FinancialAid.amount AS Balance FROM `Tuition` INNER JOIN `FinancialAid` ON Tuition.student_id = FinancialAid.student_id WHERE Tuition.student_id = %s;"""
-        cursor.execute(sql, (student_id))
-        result = cursor.fetchall()
-        table_title = ("Student's Tuition amount with provided student id")
-        table = PrettyTable(['Tuition Amount'])
-        table.set_style(DOUBLE_BORDER)
-        balance = result[0]['Balance']
-        table.add_row(([(balance)]))
-        return (table_title + "```" + table.get_string() + "```")
-        db_conn.close()
+  try:
+      with db_conn:
+        with db_conn.cursor() as cursor:
+            # Read a single record
+            sql = """SELECT Tuition.amount - FinancialAid.amount AS Balance FROM `Tuition` INNER JOIN `FinancialAid` ON Tuition.student_id = FinancialAid.student_id WHERE Tuition.student_id = %s;"""
+            cursor.execute(sql, (student_id))
+            result = cursor.fetchall()
+            table_title = ("Student's Tuition amount with provided student id")
+            table = PrettyTable(['Tuition Amount'])
+            table.set_style(DOUBLE_BORDER)
+            balance = result[0]['Balance']
+            table.add_row(([(balance)]))
+            return (table_title + "```" + table.get_string() + "```")
+            db_conn.close()
+  except Exception as tuitionError:
+        print(tuitionError)
+        return "Error: no tuition amount found for that student id"
 
 # 17. Business Rule: Allocate a financial aid grant or loan to a given student.
 async def giveGrant(student_id, type, amount):
   db_conn = connect()
-  with db_conn:
-    with db_conn.cursor() as cursor:
-        # Read a single record
-        sql = """INSERT INTO `FinancialAid`(`student_id`, `amount`, `type`) VALUES (%s,%s,%s);"""
-        cursor.execute(sql, (student_id, type, amount))
-        result = cursor.fetchall()
-        return result
-        db_conn.close()
+  try:
+      with db_conn:
+        with db_conn.cursor() as cursor:
+            # Read a single record
+            sql = """INSERT INTO `FinancialAid`(`student_id`, `amount`, `type`) SELECT %s,%s,%s;"""
+            cursor.execute(sql, (student_id, amount, type))
+            db_conn.commit()
+            table_title = ("Student's Financial Aid of given Student id")
+            result =  await select("""SELECT `FinancialAid`.`student_id`, `FinancialAid`.`amount`, `FinancialAid`.`type` FROM `FinancialAid` 
+                    WHERE `FinancialAid`.`student_id`=%s""", student_id)
+            table = PrettyTable(['Student id', 'Amount', 'Type'])
+            table.set_style(DOUBLE_BORDER)
+            for row in result:
+              table.add_row((row['student_id'], row['amount'], row['type']))
+            return (table_title + "```" + table.get_string() + "```")
+            db_conn.close()
+  except Exception as grantError:
+        print(grantError)
+        return "Error: student with that student id doesn't exist"
       
 # 18. Business Rule: Delete a user device.
 async def deleteDevice(user_id, name):
   db_conn = connect()
-  with db_conn:
-    with db_conn.cursor() as cursor:
-        # Read a single record
-        sql = """DELETE FROM Device WHERE `Device`.`user_id` = %s AND `Device`.`name` = %s;"""
-        cursor.execute(sql, (user_id, name))
-        db_conn.commit()
-        table_title = ("The matching User Id's connected devices")
-        result =  await select("""SELECT `Device`.`device_id`, `Device`.`user_id`, `Device`.`name` FROM `Device` 
-                WHERE `Device`.`user_id`=%s""", user_id)
-        table = PrettyTable(['Device id', 'User id', 'name'])
-        table.set_style(DOUBLE_BORDER)
-        for row in result:
-          table.add_row((row['device_id'], row['user_id'], row['name']))
-        return (table_title + "```" + table.get_string() + "```")
-        db_conn.close()
+  try:
+      with db_conn:
+        with db_conn.cursor() as cursor:
+            # Read a single record
+            sql = """DELETE FROM Device WHERE `Device`.`user_id` = %s AND `Device`.`name` = %s;"""
+            cursor.execute(sql, (user_id, name))
+            db_conn.commit()
+            table_title = ("The matching User Id's connected devices")
+            result =  await select("""SELECT `Device`.`device_id`, `Device`.`user_id`, `Device`.`name` FROM `Device` 
+                    WHERE `Device`.`user_id`=%s""", user_id)
+            table = PrettyTable(['Device id', 'User id', 'name'])
+            table.set_style(DOUBLE_BORDER)
+            for row in result:
+              table.add_row((row['device_id'], row['user_id'], row['name']))
+            return (table_title + "```" + table.get_string() + "```")
+            db_conn.close()
+  except Exception as deviceError:
+        print(deviceError)
+        return "Error"
       
 # 19. Business Rule: Create a procedure to check available books which include those that have no bought or current rent date in the database system.
 async def getAvailableBooks():
   db_conn = connect()
-  with db_conn:
-    with db_conn.cursor() as cursor:
-        # Read a single record
-        sql = """SELECT Book.title, Book.author FROM `Book` WHERE `bought_date` OR `rent_date` IS NULL;"""
-        cursor.execute(sql)
-        result = cursor.fetchall()
-        return ("```" + "\n\n" + tabulate(result, headers="keys", tablefmt="fancy_grid", colalign=("center", "center")) + "```")
-        db_conn.close()
+  try:
+      with db_conn:
+        with db_conn.cursor() as cursor:
+            # Read a single record
+            sql = """SELECT Book.title, Book.author FROM `Book` WHERE `bought_date` OR `rent_date` IS NULL;"""
+            cursor.execute(sql)
+            result = cursor.fetchall()
+            return ("```" + "\n\n" + tabulate(result, headers="keys", tablefmt="fancy_grid", colalign=("center", "center")) + "```")
+            db_conn.close()
+  except Exception as bookError:
+        print(bookError)
+        return "Error"
 
 async def select(sql, value_id):
     db_conn = connect()
@@ -532,33 +563,3 @@ async def response(msg):
       return "Please provide a matching user_id number with the device name"
   elif "$available_books" in bot_command:
     return await getAvailableBooks()
-  
-#   elif "/course_average" in bot_command:
-#     course = command_parts[1]
-#     db_response = course_avg(course)
-
-# def student_grades(sid, course):
-#   result = None
-#   try: 
-#       connection = connect()
-#       if connection: 
-#         cursor = connection.cursor()
-#         query = """SELECT grades.grade as "Grades" FROM Grades
-#         grades JOIN Course course on course.course_id = 
-#         grades.course JOIN Student student on student.student_id =
-#         grades.student WHERE student.student_id = %s AND
-#         course.course_id =%s"""
-
-#         variables = (sid, course)
-#         cursor.execute(query, variables)
-#         cursor.commit()
-#         results = cursor.fetchall()
-#         if results:
-#             for student in results:
-#               studen
-#             return results[0]["Grades"]
-
-#   except Exception as error:
-#         result = -1
-#   return result
- 
