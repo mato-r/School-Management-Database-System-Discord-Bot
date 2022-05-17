@@ -1,0 +1,38 @@
+-- Script name: DropAllTables.sql
+-- Author:      Mato Ramic
+-- Purpose:     used to drop all tables in this database system
+
+SET SQL_SAFE_UPDATES = 0; 
+USE SchoolManagementDB; 
+
+SET FOREIGN_KEY_CHECKS = 0;
+DROP TABLE IF EXISTS `Address`;
+DROP TABLE IF EXISTS `Book`;
+DROP TABLE IF EXISTS `Class`;
+DROP TABLE IF EXISTS `Course`;
+DROP TABLE IF EXISTS `Department`;
+DROP TABLE IF EXISTS `Device`;
+DROP TABLE IF EXISTS `Employee`;
+DROP TABLE IF EXISTS `Enrollment`;
+DROP TABLE IF EXISTS `FinancialAid`;
+DROP TABLE IF EXISTS `FoodStand`;
+DROP TABLE IF EXISTS `FoodStandItem`;
+DROP TABLE IF EXISTS `HeadofDepartment`;
+DROP TABLE IF EXISTS `Major`;
+DROP TABLE IF EXISTS `Minor`;
+DROP TABLE IF EXISTS `Order`;
+DROP TABLE IF EXISTS `OrderList`;
+DROP TABLE IF EXISTS `Payment`;
+DROP TABLE IF EXISTS `PaymentType`;
+DROP TABLE IF EXISTS `Phone`;
+DROP TABLE IF EXISTS `Receipt`;
+DROP TABLE IF EXISTS `School`;
+DROP TABLE IF EXISTS `Semester`;
+DROP TABLE IF EXISTS `Student`;
+DROP TABLE IF EXISTS `StudyRoom`;
+DROP TABLE IF EXISTS `Supplier`;
+DROP TABLE IF EXISTS `Tuition`;
+DROP TABLE IF EXISTS `User`;
+DROP TABLE IF EXISTS `WifiNetwork`;
+SET FOREIGN_KEY_CHECKS = 1;
+
