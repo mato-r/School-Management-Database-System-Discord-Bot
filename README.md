@@ -1,4 +1,104 @@
 # School-Management-Database-System-Discord-Bot
+i. Mato Ramic, 918794492
+
+ii. https://discord.gg/p85sQyNU7j 
+
+iii. #commands
+
+$enroll_student <student_id> <class_id>   
+To Enroll a student in a class if they are a student at the school.  
+e.g: $enroll_student 5 3
+
+• $add_device <user_id> <device_name>  
+To add a device of the user will only work if they have less than 5 devices linked to their user id.  
+e.g: $add_device 2 Tim's phone 
+
+• $class_roster <class_id>  
+To list the students currently enrolled in a class.  
+e.g: $class_roster 1
+
+• $department_courses <department_id>  
+To list the courses that are offered within a department.  
+e.g: $department_courses 1 
+
+• $department_majors <department_id>  
+To list the majors that are within a department.  
+e.g: $department_majors 1   
+
+• $department_minors <department_id>   
+To list the minors that are within a department.  
+e.g: $department_minors 2   
+
+• $available_rooms  
+To list all the currently unoccupied study rooms.  
+
+• $department_employees <department_id>  
+To list all the employees currently registered at a department.  
+e.g: $department_employees 1 
+
+• $food_stand_employees <food_stand_id>  
+To list the employees currently working at a food stand.  
+e.g: $food_stand_employees 2 
+
+• $food_stand_items <food_stand_id>  
+To list all the food stand items offered at a food stand.  
+e.g: $food_stand_items 3 
+
+• $class_professor <class_id>  
+To list the employee teaching the class if there is one.  
+e.g: $class_professor 1 
+
+• $remove_student <class_id> <student_id>  
+To remove a student from a class.  
+e.g: $remove_student 2 2 
+
+• $update_semester <semester_id> <start_date> <end_date>  
+To update a semester’s start and end date.  
+e.g: $update_semester 1 2021-08-20 2021-12-20 
+
+• $classes_taken <student_id>  
+To get all of the classes that a student has taken.  
+e.g $classes_taken 2 
+
+• $non_assigned_employees  
+To list employees that aren’t assigned to a department.  
+
+• $get_tuition_balance <student_id>  
+To show student’s tuition balance.   
+e.g: $get_tuition_balance 3  
+
+• $give_grant <student_id> <type> <amount>   
+To allocate financial aid grant or loan to a given student.  
+$give_grant 2 grant 2000 
+
+• $delete_device <user_id> <device_name>      
+To delete a user device.  
+$delete_device 2 Tim's phone
+
+• $available_books  
+To get a list of available books to rent or buy. 
+
+iv. #business-requirements
+    
+1. Business Rule: Enroll a student in a class only if the student is a student at the school.
+2. Business Rule: Add device of the user only if that is their 5th or less active device.
+3. Business Rule: For each class, list the students currently enrolled in that class.
+4. Business Rule: For each department, list the courses that are offered within the department.
+5. Business Rule: List the majors that are offered by the school which are under a department.
+6. Business Rule: List the minors that are offered by the school which are under a department.
+7. Business Rule: Find all the currently unoccupied study rooms and list them.
+8. Business Rule: For each department, find all the employees currently registered at that department.
+9. Business Rule: For each food stand, find all the employees currently working at that food stand.
+10. Business Rule: Find all the food stand items that are offered at a given food stand.
+11. Business Rule: For each class, find what employee is teaching the class.
+12. Business Rule: Delete a student from the class roster if they have dropped a class
+13. Business Rule: Update a semester’s start and end date.
+14. Business Rule: Get all of the classes that a student has taken.
+15. Business Rule: Create a function that gets a list of employees that aren’t assigned for a department at the moment.
+16. Business Rule: Create a procedure that calculates the student’s tuition balance minus financial aid.
+17. Business Rule: Allocate a financial aid grant or loan to a given student.
+18. Business Rule: Delete a user device.
+19. Business Rule: Create a procedure to check available books which include those that have no bought or current rent date in the database system. 
 
 
 # Discord Bot.
