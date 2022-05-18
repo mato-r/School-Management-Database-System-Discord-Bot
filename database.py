@@ -43,14 +43,16 @@ async def enrollStudent(student_id, class_id):
               WHERE (SELECT count(*) FROM `Student` WHERE `Student`.`student_id` = %s) > 0;"""
               cursor.execute(sql, (student_id, class_id, student_id))
               db_conn.commit()
-              result =  await select("""SELECT `Enrollment`.`enrollment_id`, `Enrollment`.`student_id`, `Enrollment`.`class_id`, `Student`.`name` 
+              result =  await select("""SELECT `Enrollment`.`enrollment_id`, `Enrollment`.`class_id`, Course.name, `Student`.`name` 
               FROM `Enrollment`
-              INNER JOIN `Student` ON `Enrollment`.`student_id`=`Student`.`student_id` 
+              INNER JOIN `Course`
+              INNER JOIN `Student`
+              INNER JOIN `Class` ON `Enrollment`.`student_id`=`Student`.`student_id` AND Enrollment.class_id=Class.class_id AND Course.course_id=Class.course_id
               WHERE `Enrollment`.`enrollment_id`=%s""", cursor.lastrowid)
-              table = PrettyTable(['Enrollment', 'Student', 'Class', 'Name'])
+              table = PrettyTable(['Enrollment', 'Class', 'Course', 'Name'])
               table.set_style(DOUBLE_BORDER)
               for row in result:
-                table.add_row((row['enrollment_id'], row['student_id'], row['class_id'], row['name']))
+                table.add_row((row['enrollment_id'], row['class_id'], row['name'], row['Student.name']))
               return ("```" + table.get_string() + "```")
               db_conn.close()
   except Exception as enrollError:
@@ -91,17 +93,20 @@ async def classRoster(class_id):
         with db_conn:
             with db_conn.cursor() as cursor:
                 # Read a single record
-                sql = """SELECT Enrollment.student_id, Class.course_id, Class.class_id, Course.name 
-                FROM `Enrollment` 
+                sql = """SELECT Student.name, Course.course_number, Class.class_id, Course.name 
+                FROM `Student` 
                 INNER JOIN `Class` 
-                INNER JOIN `Course` ON Enrollment.class_id=Class.class_id AND Course.course_id=Class.course_id WHERE Enrollment.class_id = %s;"""
+                INNER JOIN `Course`
+                INNER JOIN `Enrollment`
+                ON Enrollment.class_id=Class.class_id AND Course.course_id=Class.course_id AND Enrollment.student_id= Student.student_id WHERE Enrollment.class_id = %s;"""
                 cursor.execute(sql, (class_id))
+                table_title = ("Class Roster of provided Class id")
                 result = cursor.fetchall()
-                table = PrettyTable(['Student id', 'Course id', 'Class id', 'Course Name'])
+                table = PrettyTable(['Student', 'Course #', 'Class id', 'Course'])
                 table.set_style(DOUBLE_BORDER)
                 for row in result:
-                  table.add_row((row['student_id'], row['course_id'], row['class_id'], row['name']))
-                return ("```" + table.get_string() + "```")
+                  table.add_row((row['name'], row['course_number'], row['class_id'], row['Course.name']))
+                return (table_title + "```" + table.get_string() + "```")
                 db_conn.close()
     except Exception as classError:
       print(classError)
@@ -264,15 +269,18 @@ async def removeStudent(class_id, student_id):
                 sql = """DELETE FROM Enrollment WHERE `Enrollment`.`class_id` = %s AND `Enrollment`.`student_id` = %s;"""
                 cursor.execute(sql, (class_id, student_id))
                 db_conn.commit()
-                result =  await select("""SELECT `Enrollment`.`enrollment_id`, `Enrollment`.`student_id`, `Enrollment`.`class_id`, `Student`.`name` 
+                table_title = ("Classes the Student is still enrolled into")
+                result =  await select("""SELECT `Enrollment`.`enrollment_id`, `Enrollment`.`class_id`, `Course`.`name`, `Student`.`name` 
                 FROM `Enrollment`
-                INNER JOIN `Student` ON `Enrollment`.`student_id`=`Student`.`student_id` 
+                INNER JOIN `Course`
+                INNER JOIN `Class`
+                INNER JOIN `Student` ON `Enrollment`.`student_id`=`Student`.`student_id` AND Enrollment.class_id=Class.class_id AND Course.course_id=Class.course_id 
                 WHERE `Enrollment`.`student_id`=%s""", student_id)
-                table = PrettyTable(['Enrollment', 'Student', 'Class', 'Name'])
+                table = PrettyTable(['Enrollment', 'Class', 'Course', 'Name'])
                 table.set_style(DOUBLE_BORDER)
                 for row in result:
-                  table.add_row((row['enrollment_id'], row['student_id'], row['class_id'], row['name']))
-                return ("```" + table.get_string() + "```")
+                  table.add_row((row['enrollment_id'], row['class_id'], row['name'], row['Student.name']))
+                return (table_title + "```" + table.get_string() + "```")
                 db_conn.close()
     except Exception as classError:
       print(classError)
@@ -310,16 +318,17 @@ async def classesTaken(student_id):
         with db_conn:
             with db_conn.cursor() as cursor:
                 # Read a single record
-                sql = """SELECT Enrollment.enrollment_id, Enrollment.student_id, Enrollment.semester_id, Class.class_id, Course.name 
-                FROM `Enrollment` 
+                sql = """SELECT Student.name, Enrollment.semester_id, Class.class_id, Course.name 
+                FROM `Enrollment`
+                INNER JOIN `Student` 
                 INNER JOIN `Class` 
-                INNER JOIN `Course` ON Enrollment.class_id=Class.class_id AND Course.course_id=Class.course_id WHERE Enrollment.student_id = %s;"""
+                INNER JOIN `Course` ON Enrollment.class_id=Class.class_id AND Course.course_id=Class.course_id AND Enrollment.student_id=Student.student_id WHERE Enrollment.student_id = %s;"""
                 cursor.execute(sql, (student_id))
                 result = cursor.fetchall()
-                table = PrettyTable(['Enrollment', 'StudentId', 'Semester', 'Class', 'Name'])
+                table = PrettyTable(['Student', 'Semester', 'Class', 'Course'])
                 table.set_style(DOUBLE_BORDER)
                 for row in result:
-                  table.add_row((row['enrollment_id'], row['student_id'], row['semester_id'], row['class_id'], row['name']))
+                  table.add_row((row['name'], row['semester_id'], row['class_id'], row['Course.name']))
                 return ("```" + table.get_string() + "```")
                 db_conn.close()
     except Exception as classError:
@@ -374,12 +383,13 @@ async def giveGrant(student_id, type, amount):
             cursor.execute(sql, (student_id, amount, type))
             db_conn.commit()
             table_title = ("Student's Financial Aid of given Student id")
-            result =  await select("""SELECT `FinancialAid`.`student_id`, `FinancialAid`.`amount`, `FinancialAid`.`type` FROM `FinancialAid` 
+            result =  await select("""SELECT `Student`.`name`, `FinancialAid`.`amount`, `FinancialAid`.`type` FROM `FinancialAid` 
+                    INNER JOIN `Student` On `FinancialAid`.`student_id`=`Student`.`student_id` 
                     WHERE `FinancialAid`.`student_id`=%s""", student_id)
-            table = PrettyTable(['Student id', 'Amount', 'Type'])
+            table = PrettyTable(['Student', 'Amount', 'Type'])
             table.set_style(DOUBLE_BORDER)
             for row in result:
-              table.add_row((row['student_id'], row['amount'], row['type']))
+              table.add_row((row['name'], row['amount'], row['type']))
             return (table_title + "```" + table.get_string() + "```")
             db_conn.close()
   except Exception as grantError:
